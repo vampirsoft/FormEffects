@@ -6,7 +6,12 @@ interface
 {$INCLUDE teDefs.inc}
 
 uses
+{$IFDEF FORM_EFFECTS_TESTS}
+  Windows, Messages, SysUtils, Classes, teRender, Graphics,
+  FormEffects.Vcl.Graphics.Mocks;
+{$ELSE ~ FORM_EFFECTS_TESTS}
   Windows, Messages, SysUtils, Classes, teRender, Graphics;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 const
   Mask_32_1 = $7F7F7F7F;

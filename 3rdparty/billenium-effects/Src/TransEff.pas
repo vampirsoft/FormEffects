@@ -8,7 +8,13 @@ interface
 {$endif NOVCL}
 
 uses
-  Windows, Messages, SysUtils, Classes, Consts, Graphics, Controls, 
+{$IFDEF FORM_EFFECTS_TESTS}
+  Windows, Messages, SysUtils, Classes, Consts, Graphics, Controls,
+  FormEffects.System.Classes.Mocks,
+  FormEffects.Vcl.Controls.Mocks,
+{$ELSE}
+  Windows, Messages, SysUtils, Classes, Consts, Graphics, Controls,
+{$ENDIF ~ FORM_EFFECTS_TESTS}
   {$ifndef NOVCL}
   Forms,
   {$endif NOVCL}

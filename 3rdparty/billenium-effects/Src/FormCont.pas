@@ -5,8 +5,20 @@ interface
 {$INCLUDE teDefs.inc}
 
 uses
+{$IFDEF FORM_EFFECTS_TESTS}
+  SysUtils, Classes, consts, TransEff, teBkgrnd, teRender, ActnList, Windows,
+  Messages, Forms, Graphics, Controls, StdCtrls
+  , FormEffects.System.Classes.Mocks
+  , FormEffects.Vcl.Forms.Mocks
+  , FormEffects.Vcl.Graphics.Mocks
+  , FormEffects.Vcl.Controls.Mocks
+  , FormEffects.Vcl.StdCtrls.Mocks
+  , FormEffects.Vcl.Themes.Mocks
+  ;
+{$ELSE}
   SysUtils, Classes, consts, TransEff, teBkgrnd, teRender, ActnList, Windows,
   Messages, Forms, Graphics, Controls, StdCtrls;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 type
   TFCFormAlign = (fcfaDefault, fcfaNone, fcfaCenter, fcfaClient, fcfaTopLeft,
@@ -297,7 +309,7 @@ end;
     property HelpFile;
     property KeyPreview;
     property Menu;
-    property OldCreateOrder;
+//    property OldCreateOrder;
     property ObjectMenuItem;
     {$ifdef D7UP}
     property  ParentBackground;

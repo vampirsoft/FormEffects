@@ -9,6 +9,11 @@ uses
   {$ifndef NoVCL}
   Forms, Controls,
   {$endif NoVCL}
+{$IFDEF FORM_EFFECTS_TESTS}
+  FormEffects.Vcl.Graphics.Mocks,
+  FormEffects.Vcl.Controls.Mocks,
+  FormEffects.Vcl.Forms.Mocks,
+{$ENDIF ~ FORM_EFFECTS_TESTS}
   teRender;
 
 {$ifndef NoVCL}
@@ -49,7 +54,7 @@ type
     GlassActive,
     PictureActive,
     FThemesDisabled: Boolean;
-    
+
     FOnChange: TNotifyEvent;
 
     function GetChildBkOptions(Index: Integer): TFCBackgroundOptions;
@@ -81,7 +86,13 @@ type
 
     function  GetParentBkgrndForm: TFCBackgroundOptions;
     procedure SetParentBkgrndForm(const Value: Boolean);
+  {$IFDEF FORM_EFFECTS_TESTS}
+  protected
+    function  GetBkgrndForm: TCustomForm; virtual;
+  private
+  {$ELSE ~ NOT FORM_EFFECTS_TESTS}
     function  GetBkgrndForm: TCustomForm;
+  {$ENDIF ~ FORM_EFFECTS_TESTS}
     procedure SetBkgrndFormVisible(Value: Boolean);
 
     function  GetParentGlass: TFCBackgroundOptions;
@@ -118,8 +129,15 @@ type
     function  IsActive: Boolean;
 
     property BkgrndForm: TCustomForm read GetBkgrndForm;
+  {$IFDEF FORM_EFFECTS_TESTS}
+    function GetControl: TControl; virtual;
+    function GetParent: TFCBackgroundOptions; virtual;
+    property Control: TControl read GetControl write SetControl;
+    property Parent: TFCBackgroundOptions read GetParent;
+  {$ELSE ~ NOT FORM_EFFECTS_TESTS}
     property Control: TControl read FControl write SetControl;
     property Parent: TFCBackgroundOptions read FParent;
+  {$ENDIF ~ FORM_EFFECTS_TESTS}
   published
     property Opaque: Boolean read GetOpaque write SetOpaque default True;
     property ParentOpaque: Boolean read FParentOpaque write SetParentOpaque default False;
@@ -158,18 +176,55 @@ type
   function TEGetPictureModeFromDesc(Description: String): TFCPictureMode;
   {$endif TE_NOHLP}
 
+{$IFDEF FORM_EFFECTS_TESTS}
+type
+  TFCControl = class(TControl);
+
+procedure DrawStandardBackground(Control: TFCControl; DC: HDC; R: TRect; ThemesDisabled: Boolean);
+procedure DrawXRay(
+  BkOptions: TFCBackgroundOptions;
+  var Bmp: TBitmap;
+  R, DrawR: TRect;
+  BmpWidth, BmpHeight: Integer;
+  PixelFormat: TPixelFormat
+);
+procedure DrawBkgrndForm(
+  BkOptions: TFCBackgroundOptions;
+  Control: TControl;
+  var Bmp: TBitmap;
+  R, DrawR: TRect;
+  BmpWidth, BmpHeight: Integer;
+  PixelFormat: TPixelFormat
+);
+procedure BlendBkgrnd(
+  BkOptions: TFCBackgroundOptions;
+  Bmp: TBitmap;
+  LocalBmp: Boolean;
+  R: TRect;
+  RWidth, RHeight: Integer;
+  PixelFormat: TPixelFormat
+);
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
 implementation
 
 uses
   {$ifndef NoVCL}
   {$ifdef D7UP}Themes, UxTheme, {$endif D7UP}
-  TypInfo, 
+  TypInfo,
   {$endif NoVCL}
+{$IFDEF FORM_EFFECTS_TESTS}
+  teBlndWk,
+  FormEffects.Vcl.Themes.Mocks;
+{$ELSE ~ FORM_EFFECTS_TESTS}
   teBlndWk;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 {$ifndef NoVCL}
 type
+{$IFNDEF FORM_EFFECTS_TESTS}
   TFCControl = class(TControl);
+{$ENDIF ~ FORM_EFFECTS_TESTS}
   TFCCustomForm = class(TCustomForm);
 
 {$ifdef D7UP}
@@ -1468,7 +1523,11 @@ begin
     end
     else
     begin
+    {$IFDEF FORM_EFFECTS_TESTS}
+      Bmp := CreateBitmapFactory;
+    {$ELSE ~ NOT FORM_EFFECTS_TESTS}
       Bmp := TBitmap.Create;
+    {$ENDIF ~ FORM_EFFECTS_TESTS}
 //          TECurBmp := Bmp;
       Bmp.Canvas.Lock;
       AdjustBmpForTransition(Bmp, 0, RWidth, RHeight, PixelFormat);
@@ -1524,7 +1583,11 @@ begin
     finally
       Bmp.Canvas.Unlock;
       if LocalBmp then
+      {$IFDEF FORM_EFFECTS_TESTS}
+        FreeAndNilBitmap(Bmp);
+      {$ELSE ~ NOT FORM_EFFECTS_TESTS}
         Bmp.Free;
+      {$ENDIF ~ FORM_EFFECTS_TESTS}
     end;
   end
   else DrawStandardBackground(TFCControl(Control), DC, R, FThemesDisabled);
@@ -1539,6 +1602,20 @@ begin
     Changed;
   end;
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+
+function TFCBackgroundOptions.GetControl: TControl;
+begin
+  Result := FControl;
+end;
+
+function TFCBackgroundOptions.GetParent: TFCBackgroundOptions;
+begin
+  Result := FParent;
+end;
+
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 var
   OldDrawThemeParentBackground:
