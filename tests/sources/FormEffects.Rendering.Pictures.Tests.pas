@@ -1,0 +1,203 @@
+﻿/////////////////////////////////////////////////////////////////////////////////
+//*****************************************************************************//
+//* Project      : FormEffects                                                *//
+//* Latest Source: https://github.com/vampirsoft/FormEffects                  *//
+//* Unit Name    : FormEffects.Rendering.Pictures.Tests.pas                   *//
+//* Author       : Сергей (LordVampir) Дворников                              *//
+//* Copyright 2025 LordVampir (https://github.com/vampirsoft)                 *//
+//* Licensed under MIT                                                        *//
+//*****************************************************************************//
+/////////////////////////////////////////////////////////////////////////////////
+
+unit FormEffects.Rendering.Pictures.Tests;
+
+{$INCLUDE FormEffects.Tests.inc}
+
+interface
+
+uses
+  DUnitX.TestFramework,
+  Delphi.Mocks,
+  Winapi.Windows,
+  Vcl.Graphics, Vcl.Controls,
+  FormEffects.FormContainer,
+{$IFDEF USE_BILLENIUM_EFFECTS}
+  teBkgrnd,
+{$ELSE ~ NOT USE_BILLENIUM_EFFECTS}
+  FormEffects.Rendering.Pictures,
+{$ENDIF ~ USE_BILLENIUM_EFFECTS}
+  FormEffects.Vcl.Graphics.Mocks,
+  FormEffects.Vcl.Controls.Mocks;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+
+type
+
+{$IFDEF USE_BILLENIUM_EFFECTS}
+
+{ TFEBackgroundPictureModeHelper }
+
+  TFEBackgroundPictureModeHelper = record helper for TFEBackgroundPictureMode
+  public
+    function GetPictureMode: TFCPictureMode;
+  end;
+
+{$ENDIF ~ USE_BILLENIUM_EFFECTS}
+
+{ TPicturesRenderingTests }
+
+  [TestFixture]
+  TPicturesRenderingTests = class
+  strict private
+    FGraphic: TGraphic;
+    FBitmap: TBitmap;
+    FControl: TControl;
+    FWinControl: TWinControl;
+
+  strict private
+    procedure DrawPicture(const PictureMode: TFEBackgroundPictureMode; const TransparentColor: TColor;
+      const Rect: TRect); inline;
+
+  public
+    [Test]
+    [TestCase('for Center',        'Center')]
+    [TestCase('for CenterStretch', 'CenterStretch')]
+    [TestCase('for Stretch',       'Stretch')]
+    [TestCase('for Tile',          'Tile')]
+    [TestCase('for Zoom',          'Zoom')]
+    [TestCase('for TopLeft',       'TopLeft')]
+    [TestCase('for TopRight',      'TopRight')]
+    [TestCase('for BottomLeft',    'BottomLeft')]
+    [TestCase('for BottomRight',   'BottomRight')]
+    procedure DrawPicture_Should_Draw(const PictureMode: TFEBackgroundPictureMode);
+  end;
+
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
+implementation
+
+uses
+  System.Types, System.UITypes, System.SysUtils,
+  FormEffects.Utils.Rects;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+{$IFDEF USE_BILLENIUM_EFFECTS}
+
+{ TFEBackgroundPictureModeHelper }
+
+function TFEBackgroundPictureModeHelper.GetPictureMode: TFCPictureMode;
+begin
+  case Self of
+    TFEBackgroundPictureMode.Center       : Exit(fcpmCenter);
+    TFEBackgroundPictureMode.CenterStretch: Exit(fcpmCenterStretch);
+    TFEBackgroundPictureMode.Stretch      : Exit(fcpmStretch);
+    TFEBackgroundPictureMode.Zoom         : Exit(fcpmZoom);
+    TFEBackgroundPictureMode.TopLeft      : Exit(fcpmTopLeft);
+    TFEBackgroundPictureMode.TopRight     : Exit(fcpmTopRight);
+    TFEBackgroundPictureMode.BottomLeft   : Exit(fcpmBottomLeft);
+    TFEBackgroundPictureMode.BottomRight  : Exit(fcpmBottomRight);
+    else Result := fcpmTile;
+  end;
+end;
+
+{$ENDIF ~ USE_BILLENIUM_EFFECTS}
+
+{ TPicturesRenderingTests }
+
+procedure TPicturesRenderingTests.DrawPicture(const PictureMode: TFEBackgroundPictureMode;
+  const TransparentColor: TColor; const Rect: TRect);
+begin
+{$IFDEF USE_BILLENIUM_EFFECTS}
+  teBkgrnd.DrawPicture(FGraphic, PictureMode.GetPictureMode, TransparentColor, FWinControl, FBitmap, Rect, 84, FControl);
+{$ELSE ~ NOT USE_BILLENIUM_EFFECTS}
+  FormEffects.Rendering.Pictures.DrawPicture(
+    FGraphic,
+    PictureMode,
+    FWinControl,
+    FControl,
+    TransparentColor,
+    FBitmap,
+    Rect,
+    84
+  );
+{$ENDIF ~ USE_BILLENIUM_EFFECTS}
+end;
+
+procedure TPicturesRenderingTests.DrawPicture_Should_Draw(const PictureMode: TFEBackgroundPictureMode);
+begin
+  const CanvasMock  = TMock<TCanvas>.Create;
+  const BitmapMock  = TMock<TBitmap>.Create;
+  const GraphicMock = TMock<TGraphic>.Create;
+
+  BitmapMock.Setup.WillReturn(CanvasMock.Instance).When.GetterCanvas;
+
+  FGraphic := GraphicMock.Instance;
+  FBitmap  := BitmapMock.Instance;
+
+  case PictureMode of
+    TFEBackgroundPictureMode.Center,
+    TFEBackgroundPictureMode.TopLeft,
+    TFEBackgroundPictureMode.TopRight,
+    TFEBackgroundPictureMode.BottomLeft,
+    TFEBackgroundPictureMode.BottomRight:
+    begin
+      CanvasMock.Setup.Expect.Once.When.Draw(
+        It0.IsEqualTo<Integer>(279),
+        It1.IsEqualTo<Integer>(215),
+        It2.IsEqualTo<TGraphic>(FGraphic)
+      );
+    end;
+
+    TFEBackgroundPictureMode.Stretch,
+    TFEBackgroundPictureMode.CenterStretch:
+    begin
+      CanvasMock.Setup.Expect.Once.When.StretchDraw(
+        It0.IsEqualTo<TRect>(TRect.Create(279, 215, 977, 746)),
+        It1.IsEqualTo<TGraphic>(FGraphic)
+      );
+    end;
+
+    TFEBackgroundPictureMode.Tile:
+    begin
+      CanvasMock.Setup.Expect.Exactly(1).When.Draw(
+        It0.IsEqualTo<Integer>(279),
+        It1.IsEqualTo<Integer>(215),
+        It2.IsEqualTo<TGraphic>(FGraphic)
+      );
+      CanvasMock.Setup.Expect.Exactly(1).When.Draw(
+        It0.IsEqualTo<Integer>(279),
+        It1.IsEqualTo<Integer>(609),
+        It2.IsEqualTo<TGraphic>(FGraphic)
+      );
+      CanvasMock.Setup.Expect.Exactly(1).When.Draw(
+        It0.IsEqualTo<Integer>(828),
+        It1.IsEqualTo<Integer>(215),
+        It2.IsEqualTo<TGraphic>(FGraphic)
+      );
+      CanvasMock.Setup.Expect.Exactly(1).When.Draw(
+        It0.IsEqualTo<Integer>(828),
+        It1.IsEqualTo<Integer>(609),
+        It2.IsEqualTo<TGraphic>(FGraphic)
+      );
+    end;
+
+    TFEBackgroundPictureMode.Zoom:
+    begin
+      CanvasMock.Setup.Expect.Once.When.StretchDraw(
+        It0.IsEqualTo<TRect>(TRect.Create(258, 215, 998, 746)),
+        It1.IsEqualTo<TGraphic>(FGraphic)
+      );
+    end;
+  end;
+
+  DrawPicture(PictureMode, clNone, TRect.Create(279, 215, 977, 746));
+
+  CanvasMock.Verify;
+end;
+
+initialization
+  TDUnitX.RegisterTestFixture(TPicturesRenderingTests);
+
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
+end.
