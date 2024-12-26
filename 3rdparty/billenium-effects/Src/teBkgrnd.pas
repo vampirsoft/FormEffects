@@ -9,6 +9,11 @@ uses
   {$ifndef NoVCL}
   Forms, Controls,
   {$endif NoVCL}
+{$IFDEF FORM_EFFECTS_TESTS}
+  FormEffects.Vcl.Graphics.Mocks,
+  FormEffects.Vcl.Controls.Mocks,
+  FormEffects.Vcl.Forms.Mocks,
+{$ENDIF ~ FORM_EFFECTS_TESTS}
   teRender;
 
 {$ifndef NoVCL}
@@ -163,9 +168,14 @@ implementation
 uses
   {$ifndef NoVCL}
   {$ifdef D7UP}Themes, UxTheme, {$endif D7UP}
-  TypInfo, 
+  TypInfo,
   {$endif NoVCL}
+{$IFDEF FORM_EFFECTS_TESTS}
+  teBlndWk,
+  FormEffects.Vcl.Themes.Mocks;
+{$ELSE ~ FORM_EFFECTS_TESTS}
   teBlndWk;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 {$ifndef NoVCL}
 type

@@ -10,6 +10,11 @@ uses
   {$ifndef NoVCL}
   Forms, Controls,
   {$endif NoVCL}
+{$IFDEF FORM_EFFECTS_TESTS}
+  FormEffects.Vcl.Graphics.Mocks,
+  FormEffects.Vcl.Controls.Mocks,
+  FormEffects.Vcl.Forms.Mocks,
+{$ENDIF ~ FORM_EFFECTS_TESTS}
   MultiMon;
 
 {$ifndef NoVCL}
@@ -162,6 +167,108 @@ var
   TEIsRunTimePackage: Boolean;
   {$endif NOVCL}
 
+{$IFDEF FORM_EFFECTS_TESTS}
+function DoesAncestorHandle(Instance : Pointer; var Message): TClass;
+function CompleteFlags(WinControl: TControl; Flags: DWord): DWord;
+procedure GetRegControl(
+  const Window: HWND;
+  const WinControl: TWinControl;
+  var Flags: DWORD; var NonClientCallback, ClientCallback: TTEPaintCallback
+);
+function GetMDIFormWithMaximizedMDIChild(WinControl: TWinControl): Boolean;
+function GetMaximizedMDIClient(ClassName: PChar): Boolean;
+procedure GetClientSize(
+  WinControl: TWinControl;
+  Window: HWnd;
+  IsMaximizedMDIClient, IsMaximizedMDIChild: Boolean;
+  var ClientWidth, ClientHeight: Integer;
+  var ClientOrg: TPoint
+); overload;
+procedure NCPrintControl(DC: HDC; WinControl: TWinControl; Window: HWnd);
+procedure GetSize(
+  Window: HWnd;
+  IsMaximizedMDIChild: Boolean;
+  var Width, Height: Integer
+);
+function CreateBitmapFactory: TBitmap;
+procedure RenderWindowToDCAuxExt(
+  const Window, StopWnd, Parent: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC;
+  const Rect: TRect;
+  const CheckVisibility, CheckRegion, Fast: Boolean
+);
+procedure DoRenderExt(
+  const Wnd, StopWnd: HWnd;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const IsMaximizedMDIClient, IsMaximizedMDIChild, IsMDIClient, Fast: Boolean;
+  const DC: HDC;
+  const Width, Height: Integer;
+  const R: TRect;
+  const ClassType: TClass
+);
+procedure CheckClipRegionExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const IsMaximizedMDIChild: Boolean;
+  const DC: HDC;
+  const CheckRegion: Boolean;
+  const Width, Height: Integer;
+  const Rect: TRect
+);
+procedure RenderChildWindowsExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const IsMaximizedMDIClient, IsMaximizedMDIChild, IsMDIClient, Fast: Boolean;
+  const DC: HDC;
+  const ClientOrgPoint: TPoint;
+  const Rect: TRect
+);
+procedure PaintClientExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC
+);
+procedure PaintNonClientExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC
+);
+procedure EmulatePaint(DC: HDC; WinControl: TWinControl);
+procedure EraseAndPaintMessage(DC: HDC; WinControl: TWinControl; Window: HWND);
+procedure EmulateNCPaintExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC;
+  const Themed: Boolean
+);
+procedure PaintCopy(DC: HDC; WinControl: TWinControl);
+procedure WinControlNCPaintExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC;
+  const Themed: Boolean
+);
+procedure PaintThemeBorderExt(const WinControl: TWinControl; const DC: HDC; const EraseLRCorner: Boolean);
+procedure ToolWindowNCPaint(WinControl: TWinControl; DC: HDC);
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
 implementation
 
 {$ifndef NOVCL}
@@ -169,7 +276,13 @@ uses
   FlatSB,
   {$ifdef D7UP} Themes, {$endif D7UP}
   {$ifdef D11UP} UxTheme, {$endif D11UP}
+{$IFDEF FORM_EFFECTS_TESTS}
+  TypInfo, OleCtrls, ActiveX, RichEdit,
+  FormEffects.Vcl.OleCtrls.Mocks,
+  FormEffects.Vcl.Themes.Mocks;
+{$ELSE ~ FORM_EFFECTS_TESTS}
   TypInfo, OleCtrls, ActiveX, RichEdit;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 {$endif NOVCL}
 
 const
@@ -259,6 +372,13 @@ var
 
   FDevicePixelFormat: TPixelFormat;
   FDeviceBitsPerPixel: Integer;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+function CreateBitmapFactory: TBitmap;
+begin
+  Result := TBitmap.Create;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 { Global routines }
 
@@ -1402,6 +1522,27 @@ begin
   end;
 end;
 
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure GetRegControl(
+  const Window: HWND;
+  const WinControl: TWinControl;
+  var Flags: DWORD;
+  var NonClientCallback, ClientCallback: TTEPaintCallback
+);
+begin
+  var Result := TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    GetTERegControl(Window, WinControl, Result);
+
+    Flags             := Result.Flags;
+    NonClientCallback := Result.NonClientCallback;
+    ClientCallback    := Result.ClientCallback;
+  finally
+    FreeAndNil(Result);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
 procedure InternalRefreshWindows(Window: HWND; TERegControl: TTERegControl);
 var
   ChildWnd: HWND;
@@ -1538,6 +1679,28 @@ begin
   DPToLP(DC, R, 2);
   DeleteObject(ClipRgn);
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure CheckClipRegionExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const IsMaximizedMDIChild: Boolean;
+  const DC: HDC;
+  const CheckRegion: Boolean;
+  const Width, Height: Integer;
+  const Rect: TRect
+);
+begin
+  const RegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    CheckClipRegion(Wnd, DC, CheckRegion, IsMaximizedMDIChild, Width, Height, Rect);
+  finally
+    FreeAndNil(RegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 procedure GetClientSize(WinControl: TWinControl; Window: HWnd;
   IsMaximizedMDIClient, IsMaximizedMDIChild: Boolean;
@@ -1690,7 +1853,11 @@ begin
     (TEWinVersion >= teWinXP)                          and
     WindowHasRegion(Window)                            then
   begin // XP does something weird with the clipping region
+  {$IFDEF FORM_EFFECTS_TESTS}
+    Bmp := CreateBitmapFactory;
+  {$ELSE ~ FORM_EFFECTS_TESTS}
     Bmp := TBitmap.Create;
+  {$ENDIF ~ FORM_EFFECTS_TESTS}
     try
       Bmp.Canvas.Lock;
       try
@@ -1703,11 +1870,53 @@ begin
         Bmp.Canvas.Unlock;
       end;
     finally
+    {$IFNDEF FORM_EFFECTS_TESTS}
       Bmp.Free;
+    {$ENDIF ~ FORM_EFFECTS_TESTS}
     end;
   end
   else SendMessage(Window, WM_PRINT, DC, PRF_NONCLIENT);
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure PaintThemeBorderExt(const WinControl: TWinControl; const DC: HDC; const EraseLRCorner: Boolean);
+var
+  EmptyRect,
+  DrawRect: TRect;
+  H, W: Integer;
+  AStyle,
+  ExStyle: Integer;
+  Details: TThemedElementDetails;
+begin
+  with WinControl do
+  begin
+    ExStyle := GetWindowLong(Handle, GWL_EXSTYLE);
+    if (ExStyle and WS_EX_CLIENTEDGE) <> 0 then
+    begin
+      GetWindowRect(Handle, DrawRect);
+      OffsetRect(DrawRect, -DrawRect.Left, -DrawRect.Top);
+        EmptyRect := DrawRect;
+        if EraseLRCorner then
+        begin
+          AStyle := GetWindowLong(Handle, GWL_STYLE);
+          if ((AStyle and WS_HSCROLL) <> 0) and ((AStyle and WS_VSCROLL) <> 0) then
+          begin
+            W := GetSystemMetrics(SM_CXVSCROLL);
+            H := GetSystemMetrics(SM_CYHSCROLL);
+            InflateRect(EmptyRect, -2, -2);
+            with EmptyRect do
+              EmptyRect := Rect(Right - W, Bottom - H, Right, Bottom);
+            FillRect(DC, EmptyRect, GetSysColorBrush(COLOR_BTNFACE));
+          end;
+        end;
+        with DrawRect do
+          ExcludeClipRect(DC, Left + 2, Top + 2, Right - 2, Bottom - 2);
+        Details := ThemeServices.GetElementDetails(teEditTextNormal);
+        ThemeServices.DrawElement(DC, Details, DrawRect);
+    end;
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 procedure WinControlNCPaint(WinControl: TWinControl; DC: HDC; Themed: Boolean);
   {$ifdef D7UP}
@@ -1835,12 +2044,30 @@ begin
 
     {$ifdef D7UP}
     if Themed or (csNeedsBorderPaint in WinControl.ControlStyle) then
+    {$IFDEF FORM_EFFECTS_TESTS}
+      PaintThemeBorderExt(WinControl, DC, False);
+    {$ELSE ~ FORM_EFFECTS_TESTS}
       PaintThemeBorder(WinControl, DC, False);
+    {$ENDIF ~ FORM_EFFECTS_TESTS}
     {$endif D7UP}
   finally
     RestoreDC(DC, SaveIndex);
   end;
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure WinControlNCPaintExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC;
+  const Themed: Boolean
+);
+begin
+  WinControlNCPaint(WinControl, DC, Themed);
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 procedure EraseAndPaintMessage(DC: HDC; WinControl: TWinControl; Window: HWND);
 var
@@ -2229,8 +2456,18 @@ begin
   end;
 end;
 
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure EmulateNCPaint(
+  DC: HDC;
+  WinControl: TWinControl;
+  Window, StopWnd: HWnd;
+  Themed: Boolean;
+  RegControl: TTERegControl
+);
+{$ELSE ~ FORM_EFFECTS_TESTS}
 procedure EmulateNCPaint(DC: HDC; WinControl: TWinControl; Window: HWnd;
   Themed: Boolean);
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 begin
   if WinControl = nil then
     exit;
@@ -2243,12 +2480,53 @@ begin
   then ToolWindowNCPaint(WinControl, DC)
   else
   begin
+  {$IFDEF FORM_EFFECTS_TESTS}
+    WinControlNCPaintExt(
+      Window,
+      StopWnd,
+      WinControl,
+      RegControl.Flags,
+      RegControl.NonClientCallback,
+      RegControl.ClientCallback,
+      DC,
+      Themed
+    );
+  {$ELSE ~ FORM_EFFECTS_TESTS}
     WinControlNCPaint(TWinControl(WinControl), DC, Themed);
+  {$ENDIF ~ FORM_EFFECTS_TESTS}
   end;
 end;
 
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure EmulateNCPaintExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC;
+  const Themed: Boolean
+);
+begin
+  const RegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    EmulateNCPaint(DC, WinControl, Wnd, StopWnd, Themed, RegControl);
+  finally
+    FreeAndNil(RegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure PaintNonClient(
+  DC: HDC;
+  WinControl: TWinControl;
+  Window, StopWnd: HWnd;
+  TERegControl: TTERegControl
+);
+{$ELSE ~ FORM_EFFECTS_TESTS}
 procedure PaintNonClient(DC: HDC; WinControl: TWinControl; Window: HWnd;
   TERegControl: TTERegControl);
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 var
   SaveIndex,
   SaveIndex2: Integer;
@@ -2286,7 +2564,20 @@ begin
     begin
       SaveIndex2 := SaveDC(DC);
       try
+      {$IFDEF FORM_EFFECTS_TESTS}
+        EmulateNCPaintExt(
+          Window,
+          StopWnd,
+          WinControl,
+          TERegControl.Flags,
+          TERegControl.NonClientCallback,
+          TERegControl.ClientCallback,
+          DC,
+          (TERegControl.Flags and (RCF_THEMEDNC)) <> 0
+        );
+      {$ELSE ~ FORM_EFFECTS_TESTS}
         EmulateNCPaint(DC, WinControl, Window, (TERegControl.Flags and (RCF_THEMEDNC)) <> 0);
+      {$ENDIF ~ FORM_EFFECTS_TESTS}
       finally
         RestoreDC(DC, SaveIndex2);
       end;
@@ -2313,8 +2604,24 @@ begin
     then SendMessage(Window, CM_BENCPAINT, DC, BE_ID)
     else if(TERegControl.Flags and RCF_BEFULLRENDER) <> 0
     then SendMessage(Window, CM_BEFULLRENDER, DC, BE_ID)
+  {$IFDEF FORM_EFFECTS_TESTS}
+    else
+    begin
+      EmulateNCPaintExt(
+        Window,
+        StopWnd,
+        WinControl,
+        TERegControl.Flags,
+        TERegControl.NonClientCallback,
+        TERegControl.ClientCallback,
+        DC,
+        (TERegControl.Flags and (RCF_THEMEDNC)) <> 0
+      );
+    end;
+  {$ELSE ~ FORM_EFFECTS_TESTS}
     else EmulateNCPaint(DC, WinControl, Window,
           (TERegControl.Flags and (RCF_THEMEDNC)) <> 0);
+  {$ENDIF ~ FORM_EFFECTS_TESTS}
   finally
     RestoreDC(DC, SaveIndex);
   end;
@@ -2330,8 +2637,35 @@ begin
   end;
 end;
 
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure PaintNonClientExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC
+);
+begin
+  const RegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    PaintNonClient(DC, WinControl, Wnd, StopWnd, RegControl);
+  finally
+    FreeAndNil(RegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure PaintClient(
+  DC: HDC;
+  WinControl: TWinControl;
+  Window, StopWnd: HWnd;
+  TERegControl: TTERegControl
+);
+{$ELSE ~ FORM_EFFECTS_TESTS}
 procedure PaintClient(DC: HDC; WinControl: TWinControl; Window: HWnd;
   TERegControl: TTERegControl);
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 var
   SaveIndex: Integer;
 begin
@@ -2374,6 +2708,24 @@ begin
     end;
   end;
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure PaintClientExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC
+);
+begin
+  const RegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    PaintClient(DC, WinControl, Wnd, StopWnd, RegControl);
+  finally
+    FreeAndNil(RegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 procedure RenderWindowToDCAux(Window, StopWnd, Parent: HWND;
   WinControl: TWinControl; DC: HDC; R: TRect;
@@ -2426,8 +2778,25 @@ begin
       begin
         OffsetWindowOrgEx(DC, -ChildOrg.x, -ChildOrg.y, P);
         try
+        {$IFDEF FORM_EFFECTS_TESTS}
+          RenderWindowToDCAuxExt(
+            ChildWnd,
+            StopWnd,
+            Window,
+            nil,
+            TERegControl.Flags,
+            TERegControl.NonClientCallback,
+            TERegControl.ClientCallback,
+            DC,
+            R,
+            True,
+            True,
+            Fast
+          );
+        {$ELSE ~ FORM_EFFECTS_TESTS}
           RenderWindowToDCAux(ChildWnd, StopWnd, Window, nil, DC, ChildRect,
             True, True, Fast, TERegControl);
+        {$ENDIF ~ FORM_EFFECTS_TESTS}
         finally
           SetWindowOrgEx(DC, P.x, P.y, nil);
         end;
@@ -2440,6 +2809,35 @@ begin
   end;
 end;
 
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure RenderChildWindowsExt(
+  const Wnd, StopWnd: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const IsMaximizedMDIClient, IsMaximizedMDIChild, IsMDIClient, Fast: Boolean;
+  const DC: HDC;
+  const ClientOrgPoint: TPoint;
+  const Rect: TRect
+);
+begin
+  const RegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    RenderChildWindows(
+      DC, Wnd,
+      StopWnd,
+      IsMDIClient,
+      IsMaximizedMDIClient,
+      Fast,
+      ClientOrgPoint,
+      Rect,
+      RegControl
+    );
+  finally
+    FreeAndNil(RegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 {$ifdef XP_RENDER}
 procedure DoRenderXP(DC: HDC; Window: HWnd);
 type
@@ -2543,25 +2941,55 @@ begin
           end;
           HookDC := SaveHookDC;
           try
+          {$IFDEF FORM_EFFECTS_TESTS}
+            PaintNonClientExt(
+              Window,
+              StopWnd,
+              WinControl,
+              TERegControl.Flags,
+              TERegControl.NonClientCallback,
+              TERegControl.ClientCallback,
+              DC
+            );
+          {$ELSE ~ FORM_EFFECTS_TESTS}
             PaintNonClient(DC, WinControl, Window, TERegControl);
+          {$ENDIF ~ FORM_EFFECTS_TESTS}
           finally
             SetBrushOrgEx(DC, BOrg.X, BOrg.Y, nil);
           end;
         end
         else
         begin
+        {$IFDEF FORM_EFFECTS_TESTS}
+          Bmp := CreateBitmapFactory;
+        {$ELSE ~ FORM_EFFECTS_TESTS}
           Bmp := TBitmap.Create;
+        {$ENDIF ~ FORM_EFFECTS_TESTS}
           try
             Bmp.Canvas.Lock;
             try
               AdjustBmpForTransition(Bmp, 0, Width, Height, pfDevice);
+            {$IFDEF FORM_EFFECTS_TESTS}
+              PaintNonClientExt(
+                Window,
+                StopWnd,
+                WinControl,
+                TERegControl.Flags,
+                TERegControl.NonClientCallback,
+                TERegControl.ClientCallback,
+                Bmp.Canvas.Handle
+              );
+            {$ELSE ~ FORM_EFFECTS_TESTS}
               PaintNonClient(Bmp.Canvas.Handle, WinControl, Window, TERegControl);
+            {$ENDIF ~ FORM_EFFECTS_TESTS}
               BitBlt(DC, 0, 0, Width, Height, Bmp.Canvas.Handle, 0, 0, SRCCOPY);
             finally
               Bmp.Canvas.Unlock;
             end;
           finally
+          {$IFNDEF FORM_EFFECTS_TESTS}
             Bmp.Free;
+          {$ENDIF ~ FORM_EFFECTS_TESTS}
           end;
         end;
       finally
@@ -2603,26 +3031,56 @@ begin
               HookDC := SaveHookDC;
 
               try
+              {$IFDEF FORM_EFFECTS_TESTS}
+                PaintClientExt(
+                  Window,
+                  StopWnd,
+                  WinControl,
+                  TERegControl.Flags,
+                  TERegControl.NonClientCallback,
+                  TERegControl.ClientCallback,
+                  DC
+                );
+              {$ELSE ~ FORM_EFFECTS_TESTS}
                 PaintClient(DC, WinControl, Window, TERegControl);
+              {$ENDIF ~ FORM_EFFECTS_TESTS}
               finally
                 SetBrushOrgEx(DC, BOrg.X, BOrg.Y, nil);
               end;
             end
             else
             begin
+            {$IFDEF FORM_EFFECTS_TESTS}
+              Bmp := CreateBitmapFactory;
+            {$ELSE ~ FORM_EFFECTS_TESTS}
               Bmp := TBitmap.Create;
+            {$ENDIF ~ FORM_EFFECTS_TESTS}
               try
                 Bmp.Canvas.Lock;
                 try
                   AdjustBmpForTransition(Bmp, 0, ClientWidth, ClientHeight, pfDevice);
+                {$IFDEF FORM_EFFECTS_TESTS}
+                  PaintClientExt(
+                    Window,
+                    StopWnd,
+                    WinControl,
+                    TERegControl.Flags,
+                    TERegControl.NonClientCallback,
+                    TERegControl.ClientCallback,
+                    Bmp.Canvas.Handle
+                  );
+                {$ELSE ~ FORM_EFFECTS_TESTS}
                   PaintClient(Bmp.Canvas.Handle, WinControl, Window, TERegControl);
+                {$ENDIF ~ FORM_EFFECTS_TESTS}
                   BitBlt(DC, 0, 0, ClientWidth, ClientHeight, Bmp.Canvas.Handle, 0, 0,
                     SRCCOPY);
                 finally
                   Bmp.Canvas.Unlock;
                 end;
               finally
+              {$IFNDEF FORM_EFFECTS_TESTS}
                 Bmp.Free;
+              {$ENDIF ~ FORM_EFFECTS_TESTS}
               end;
             end;
           finally
@@ -2666,25 +3124,55 @@ begin
               end;
               HookDC := SaveHookDC;
               try
+              {$IFDEF FORM_EFFECTS_TESTS}
+                PaintNonClientExt(
+                  Window,
+                  StopWnd,
+                  WinControl,
+                  TERegControl.Flags,
+                  TERegControl.NonClientCallback,
+                  TERegControl.ClientCallback,
+                  DC
+                );
+              {$ELSE ~ FORM_EFFECTS_TESTS}
                 PaintNonClient(DC, WinControl, Window, TERegControl);
+              {$ENDIF ~ FORM_EFFECTS_TESTS}
               finally
                 SetBrushOrgEx(DC, BOrg.X, BOrg.Y, nil);
               end;
             end
             else
             begin
+            {$IFDEF FORM_EFFECTS_TESTS}
+              Bmp := CreateBitmapFactory;
+            {$ELSE ~ FORM_EFFECTS_TESTS}
               Bmp := TBitmap.Create;
+            {$ENDIF ~ FORM_EFFECTS_TESTS}
               try
                 Bmp.Canvas.Lock;
                 try
                   AdjustBmpForTransition(Bmp, 0, Width, Height, pfDevice);
+                {$IFDEF FORM_EFFECTS_TESTS}
+                  PaintNonClientExt(
+                    Window,
+                    StopWnd,
+                    WinControl,
+                    TERegControl.Flags,
+                    TERegControl.NonClientCallback,
+                    TERegControl.ClientCallback,
+                    Bmp.Canvas.Handle
+                  );
+                {$ELSE ~ FORM_EFFECTS_TESTS}
                   PaintNonClient(Bmp.Canvas.Handle, WinControl, Window, TERegControl);
+                {$ENDIF ~ FORM_EFFECTS_TESTS}
                   BitBlt(DC, 0, 0, Width, Height, Bmp.Canvas.Handle, 0, 0, SRCCOPY);
                 finally
                   Bmp.Canvas.Unlock;
                 end;
               finally
+              {$IFNDEF FORM_EFFECTS_TESTS}
                 Bmp.Free;
+              {$ENDIF ~ FORM_EFFECTS_TESTS}
               end;
             end;
           finally
@@ -2707,8 +3195,26 @@ begin
       try
         IntersectClipRect(DC, ClientOrg.x, ClientOrg.y,
           ClientOrg.x + ClientWidth, ClientOrg.y + ClientHeight);
+      {$IFDEF FORM_EFFECTS_TESTS}
+        RenderChildWindowsExt(
+          Window,
+          StopWnd,
+          WinControl,
+          TERegControl.Flags,
+          TERegControl.NonClientCallback,
+          TERegControl.ClientCallback,
+          IsMaximizedMDIClient,
+          IsMaximizedMDIChild,
+          IsMDIClient,
+          Fast,
+          DC,
+          ClientOrg,
+          R
+        );
+      {$ELSE ~ FORM_EFFECTS_TESTS}
         RenderChildWindows(DC, Window, StopWnd, IsMDIClient,
           IsMaximizedMDIClient, Fast, ClientOrg, R, TERegControl);
+      {$ENDIF ~ FORM_EFFECTS_TESTS}
       finally
         SelectClipRgn(DC, SaveRgn);
         DeleteObject(SaveRgn);
@@ -2718,6 +3224,42 @@ begin
     UnhookDCAPI(not Fast);
   end;
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure DoRenderExt(
+  const Wnd, StopWnd: HWnd;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const IsMaximizedMDIClient, IsMaximizedMDIChild, IsMDIClient, Fast: Boolean;
+  const DC: HDC;
+  const Width, Height: Integer;
+  const R: TRect;
+  const ClassType: TClass
+);
+begin
+  const RegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    DoRender(
+      DC,
+      WinControl,
+      Wnd,
+      StopWnd,
+      IsMDIClient,
+      IsMaximizedMDIClient,
+      IsMaximizedMDIChild,
+      Fast,
+      Width,
+      Height,
+      R,
+      RegControl,
+      ClassType
+    );
+  finally
+    FreeAndNil(RegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 procedure RenderWindowToDCAux(Window, StopWnd, Parent: HWND;
   WinControl: TWinControl; DC: HDC; R: TRect;
@@ -2751,8 +3293,25 @@ begin
     GetClipRgn(DC, SaveRgn);
     try
       GetSize(Window, IsMaximizedMDIChild, Width, Height);
+    {$IFDEF FORM_EFFECTS_TESTS}
+      CheckClipRegionExt(
+        Window,
+        StopWnd,
+        WinControl,
+        TERegControl.Flags,
+        TERegControl.NonClientCallback,
+        TERegControl.ClientCallback,
+        IsMaximizedMDIChild,
+        DC,
+        CheckRegion,
+        Width,
+        Height,
+        R
+      );
+    {$ELSE ~ FORM_EFFECTS_TESTS}
       CheckClipRegion(Window, DC, CheckRegion, IsMaximizedMDIChild, Width,
         Height, R);
+    {$ENDIF ~ FORM_EFFECTS_TESTS}
       if not IsRectEmpty(R) then
       begin
         AlreadyRendered := False;
@@ -2781,10 +3340,37 @@ begin
         {$endif AERO_RENDER}
         if not AlreadyRendered then
         begin
+        {$IFDEF FORM_EFFECTS_TESTS}
+          GetRegControl(
+            Window,
+            WinControl,
+            TERegControl.Flags,
+            TERegControl.NonClientCallback,
+            TERegControl.ClientCallback
+          );
+          DoRenderExt(
+            Window,
+            StopWnd,
+            WinControl,
+            TERegControl.Flags,
+            TERegControl.NonClientCallback,
+            TERegControl.ClientCallback,
+            IsMaximizedMDIClient,
+            IsMaximizedMDIChild,
+            IsMDIClient,
+            Fast,
+            DC,
+            Width,
+            Height,
+            R,
+            ClassType
+          );
+        {$ELSE ~ FORM_EFFECTS_TESTS}
           GetTERegControl(Window, WinControl, TERegControl);
           DoRender(DC, WinControl, Window, StopWnd, IsMDIClient,
             IsMaximizedMDIClient, IsMaximizedMDIChild, Fast, Width, Height, R,
             TERegControl, ClassType);
+        {$ENDIF ~ FORM_EFFECTS_TESTS}
         end;
       end;
     finally
@@ -2793,6 +3379,37 @@ begin
     end;
   end;
 end;
+
+{$IFDEF FORM_EFFECTS_TESTS}
+procedure RenderWindowToDCAuxExt(
+  const Window, StopWnd, Parent: HWND;
+  const WinControl: TWinControl;
+  const Flags: DWORD;
+  const NonClientCallback, ClientCallback: TTEPaintCallback;
+  const DC: HDC;
+  const Rect: TRect;
+  const CheckVisibility, CheckRegion, Fast: Boolean
+);
+begin
+  const TERegControl = TTERegControl.Create(Flags, NonClientCallback, ClientCallback);
+  try
+    RenderWindowToDCAux(
+      Window,
+      StopWnd,
+      Parent,
+      WinControl,
+      DC,
+      Rect,
+      CheckVisibility,
+      CheckRegion,
+      Fast,
+      TERegControl
+    );
+  finally
+    FreeAndNil(TERegControl);
+  end;
+end;
+{$ENDIF ~ FORM_EFFECTS_TESTS}
 
 procedure RenderWindowToDC(Window, StopWnd: HWND; WinControl: TWinControl;
   DC: HDC; R: TRect;
@@ -2830,8 +3447,25 @@ begin
 
     TERegControl := TTERegControl.Create(0, nil, nil);
     try
+    {$IFDEF FORM_EFFECTS_TESTS}
+      RenderWindowToDCAuxExt(
+        Window,
+        StopWnd,
+        Parent,
+        WinControl,
+        TERegControl.Flags,
+        TERegControl.NonClientCallback,
+        TERegControl.ClientCallback,
+        DC,
+        R,
+        False,
+        CheckRegion,
+        Fast
+      );
+    {$ELSE ~ FORM_EFFECTS_TESTS}
       RenderWindowToDCAux(Window, StopWnd, Parent, WinControl, DC, R, False,
         CheckRegion, Fast, TERegControl);
+    {$ENDIF ~ FORM_EFFECTS_TESTS}
     finally
       TERegControl.Free;
     end;

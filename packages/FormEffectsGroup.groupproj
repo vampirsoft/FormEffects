@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{002D20D1-7C96-42CD-9BF2-EA877530E2A9}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="FormEffects.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="FormEffectsD.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FormEffects">
+        <MSBuild Projects="FormEffects.dproj"/>
+    </Target>
+    <Target Name="FormEffects:Clean">
+        <MSBuild Projects="FormEffects.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FormEffects:Make">
+        <MSBuild Projects="FormEffects.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="FormEffectsD">
+        <MSBuild Projects="FormEffectsD.dproj"/>
+    </Target>
+    <Target Name="FormEffectsD:Clean">
+        <MSBuild Projects="FormEffectsD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FormEffectsD:Make">
+        <MSBuild Projects="FormEffectsD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FormEffects;FormEffectsD"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FormEffects:Clean;FormEffectsD:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FormEffects:Make;FormEffectsD:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
