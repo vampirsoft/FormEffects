@@ -43,6 +43,14 @@
   {$define D15} // Delphi XE
 {$endif VER220}
 
+{$ifdef VER350} // Delphi 11
+  {$define D15}
+{$endif VER350}
+
+{$ifdef VER360} // Delphi 12
+  {$define D15}
+{$endif VER350}
+
 {$ifdef D6}
   {$define D6UP} // Delphi 6 or superior
   {$undef D6}
@@ -112,3 +120,4 @@
   {$define D14UP} // Delphi 2010 or superior
   {$undef D15}
 {$endif D15}
+

@@ -297,7 +297,7 @@ end;
     property HelpFile;
     property KeyPreview;
     property Menu;
-    property OldCreateOrder;
+//    property OldCreateOrder;
     property ObjectMenuItem;
     {$ifdef D7UP}
     property  ParentBackground;

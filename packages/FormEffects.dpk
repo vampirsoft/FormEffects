@@ -1,0 +1,56 @@
+﻿/////////////////////////////////////////////////////////////////////////////////
+//*****************************************************************************//
+//* Project      : FormEffects                                                *//
+//* Latest Source: https://github.com/vampirsoft/FormEffects                  *//
+//* Unit Name    : FormEffects.dpr                                            *//
+//* Author       : Сергей (LordVampir) Дворников                              *//
+//* Copyright 2025 LordVampir (https://github.com/vampirsoft)                 *//
+//* Licensed under MIT                                                        *//
+//*****************************************************************************//
+/////////////////////////////////////////////////////////////////////////////////
+
+{$INCLUDE FormEffects.inc}
+
+{$DESCRIPTION 'FormEffects Library by Developer Sergey (LordVampir) Dvornikov'}
+{$RUNONLY ON}
+
+package FormEffects;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$IMPLICITBUILD ON}
+
+requires
+  vcl;
+
+contains
+  FormEffects.TypeHelpers in '..\sources\FormEffects.TypeHelpers.pas',
+  FormEffects.Utils.ScrollBars in '..\sources\FormEffects.Utils.ScrollBars.pas',
+  FormEffects.Utils.Rects in '..\sources\FormEffects.Utils.Rects.pas',
+  FormEffects.Rendering in '..\sources\FormEffects.Rendering.pas',
+  FormEffects.FormContainer in '..\sources\FormEffects.FormContainer.pas';
+
+end.
