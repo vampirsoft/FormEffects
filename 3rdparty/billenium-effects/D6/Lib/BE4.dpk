@@ -1,0 +1,88 @@
+package BE4;
+
+{$R *.RES}
+{$ALIGN 8}
+{$BOOLEVAL OFF}
+{$ASSERTIONS OFF}
+{$DEBUGINFO OFF}
+{$LOCALSYMBOLS OFF}
+{$REFERENCEINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$LIBSUFFIX 'D6'}
+{$IMAGEBASE $67700000}
+{$DESCRIPTION 'Billenium Effects 4.3 Runtime Package'}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  vcl;
+
+contains
+  FormCont,
+  teAllTr,
+  teAnim,
+  teBkgrnd,
+  teBlckEd,
+  teBlend,
+  teBlur,
+  teBlurEd,
+  teBlndWk,
+  teBmMkEd,
+  teBmpMsk,
+  teBlock,
+  teChrono,
+  teCircle,
+  teCtrls,
+  teDiagon,
+  teDrip,
+  teEditor,
+  teForm,
+  teFormAn,
+  teFuse,
+  teFuseEd,
+  teImage,
+  teIntrlc,
+  teMasked,
+  teMskWk,
+  teModEdit,
+  teMskEd,
+  tePage,
+  tePageEd,
+  tePixelt,
+  tePixlEd,
+  tePush,
+  teRadial,
+  teRandom,
+  teRender,
+  teRndEd,
+  teRndLis,
+  teRoll,
+  teRollEd,
+  teSldEd,
+  teSlide,
+  teTimed,
+  teTrEfEd,
+  teTrExpo,
+  teTrLEdi,
+  teVclCtl,
+  teVclScr,
+  teWFall,
+  teWipe,
+  teWipeEd,
+  teZFrAn,
+  TransEff;
+
+end.

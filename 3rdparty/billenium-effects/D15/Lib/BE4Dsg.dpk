@@ -1,0 +1,49 @@
+package BE4Dsg;
+
+{$R *.RES}
+{$R FormCont.DCR}
+{$R teCtrls.DCR}
+{$R teForm.DCR}
+{$R teImage.DCR}
+{$R teTrList.DCR}
+{$R teAnim.DCR}
+{$R teTrExpo.DCR}
+{$ALIGN 8}
+{$BOOLEVAL OFF}
+{$ASSERTIONS OFF}
+{$DEBUGINFO OFF}
+{$LOCALSYMBOLS OFF}
+{$REFERENCEINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$LIBSUFFIX 'D15'}
+{$IMAGEBASE $62000000}
+{$DESCRIPTION 'Billenium Effects 4.3'}
+{$DESIGNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  BE4,
+  designide,
+  vclimg,
+  vcl;
+
+contains
+  teAbout,
+  teAnLEdi,
+  teReg,
+  teXperts;
+
+end.
