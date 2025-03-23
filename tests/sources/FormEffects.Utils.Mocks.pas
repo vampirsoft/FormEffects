@@ -22,6 +22,8 @@ type
 
 { TMocksManager }
 
+{$M+}
+
   TMocksManager = class
   strict private
     FTrampolineIntercepts: TList<IUnknown>;
@@ -33,6 +35,8 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
   end;
+
+{$M-}
 
 implementation
 

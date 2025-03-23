@@ -790,6 +790,11 @@ type
   );
 {$ENDIF ~ FORM_EFFECTS_TESTS}
 
+  TControlScrollBarHelper = class helper for TControlScrollBar
+  public
+    function isRegular: Boolean; inline;
+  end;
+
 function ResolveStopWnd(const Wnd, StopWnd: HWND): HWND; inline;
 begin
   if StopWnd.IsChild(Wnd) then
@@ -976,8 +981,8 @@ begin
       with TScrollingWinControl(FWinControl) do
       begin
       {$MESSAGE WARN 'Need to check this condition'}
-        if ((HorzScrollBar.Visible and (HorzScrollBar.Style = ssRegular)) and not (VertScrollBar.Visible and (VertScrollBar.Style <> ssRegular))) or
-           ((VertScrollBar.Visible and (VertScrollBar.Style = ssRegular)) and not (HorzScrollBar.Visible and (HorzScrollBar.Style <> ssRegular))) then
+        if ((HorzScrollBar.Visible and HorzScrollBar.isRegular) and not (VertScrollBar.Visible and not VertScrollBar.isRegular)) or
+           ((VertScrollBar.Visible and VertScrollBar.isRegular) and not (HorzScrollBar.Visible and not HorzScrollBar.isRegular)) then
           UninitializeFlatSB(FWnd);
       end;
     end;
@@ -1839,6 +1844,13 @@ begin
     CheckVisibility,
     CheckRegion
   );
+end;
+
+{ TControlScrollBarHelper }
+
+function TControlScrollBarHelper.isRegular: Boolean;
+begin
+  Result := Self.Style = ssRegular;
 end;
 
 {$ENDREGION 'Internal definitions'}

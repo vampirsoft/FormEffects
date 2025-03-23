@@ -173,15 +173,13 @@ type
 function FindControl(Handle: HWND): TWinControl;
 
 type
-  TVclControlsMocks = class(TMocksManager)
-  private type
-    TFindControlResultReference = reference to function(const Wnd: HWND): TWinControl;
+  TVclControlsMocks = class abstract(TMocksManager)
   public
-    procedure FindControl_Result(const FindControlResult: TWinControl); overload;
-    procedure FindControl_Result(const Callback: TFindControlResultReference); overload;
+    function FindControl(const Handle: HWND): TWinControl; virtual; abstract;
 
   public
     constructor Create; override;
+    destructor Destroy; override;
   end;
 
 implementation
@@ -305,37 +303,15 @@ begin
 end;
 
 var
-  FindControlResultReference: TVclControlsMocks.TFindControlResultReference = nil;
+  VclControlsMocks: TVclControlsMocks;
 
 function FindControl(Handle: HWND): TWinControl;
 begin
-  Result := FindControlResultReference(Handle);
-end;
+  if VclControlsMocks = nil then
+    Exit(nil);
 
-procedure TVclControlsMocks.FindControl_Result(const FindControlResult: TWinControl);
-begin
-  FindControl_Result(
-    function(const Wnd: HWND): TWinControl
-    begin
-      Result := FindControlResult;
-    end
-  );
+  Result := VclControlsMocks.FindControl(Handle);
 end;
-
-procedure TVclControlsMocks.FindControl_Result(const Callback: TFindControlResultReference);
-begin
-  if Assigned(Callback) then
-    FindControlResultReference := Callback
-  else
-  begin
-    FindControlResultReference :=
-      function(const Wnd: HWND): TWinControl
-      begin
-        Result := nil;
-      end;
-  end;
-end;
-
 
 { TVclControlsMocks }
 
@@ -343,7 +319,14 @@ constructor TVclControlsMocks.Create;
 begin
   inherited Create;
 
-  FindControl_Result(nil);
+  VclControlsMocks := Self;
+end;
+
+destructor TVclControlsMocks.Destroy;
+begin
+  VclControlsMocks := nil;
+
+  inherited Destroy;
 end;
 
 end.

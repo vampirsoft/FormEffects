@@ -26,7 +26,6 @@ uses
   FormEffects.Rendering,
 {$ENDIF ~ USE_BILLENIUM_EFFECTS}
   FormEffects.Winapi.Windows.Mocks,
-  FormEffects.Utils.Mocks,
   FormEffects.Utils.Windows.Mocks,
   FormEffects.Utils.Forms.Mocks,
   FormEffects.Vcl.Controls.Mocks;
@@ -37,31 +36,6 @@ type
 
   TPaintCallback = {$IFDEF USE_BILLENIUM_EFFECTS}TTEPaintCallback{$ELSE}TFEPaintCallback{$ENDIF};
 
-{$REGION 'TRenderWindowToDCAuxMocks'}
-
-{ TRenderWindowToDCAuxMocks }
-
-  TRenderWindowToDCAuxMocks = class(TMocksManager)
-  private type
-    TRenderWindowToDCAuxResultReference =
-      reference to procedure(
-        const Wnd, StopWnd: HWND;
-        const WinControl: TWinControl;
-        const Flags: DWORD;
-        const NonClientCallback, ClientCallback: TPaintCallback;
-        const DC: HDC;
-        const Rect: TRect;
-        const CheckVisibility, CheckRegion: Boolean
-      );
-  public
-    procedure RenderWindowToDCAux_Result(const Callback: TRenderWindowToDCAuxResultReference);
-
-  public
-    constructor Create; override;
-  end;
-
-{$ENDREGION 'TRenderWindowToDCAuxMocks'}
-
 { TRenderWindowToDCTests }
 
   [TestFixture]
@@ -70,8 +44,6 @@ type
     FWinapiWindowsMocks: TWinapiWindowsMocks;
     FUtilsWindowsMocks: TUtilsWindowsMocks;
     FUtilsFormsMocks: TUtilsFormsMocks;
-    FVclControlsMocks: TVclControlsMocks;
-    FRenderWindowToDCAuxMocks: TRenderWindowToDCAuxMocks;
 
     FWnd: HWND;
     FStopWnd: HWND;
@@ -79,7 +51,10 @@ type
     FWinControl: TWinControl;
 
   strict private
-    procedure RenderWindowToDC(const ClientCoordinates: Boolean = False; const CheckVisibility: Boolean = False); inline;
+    procedure RenderWindowToDC(
+      const ClientCoordinates: Boolean = False;
+      const CheckVisibility: Boolean = False
+    ); inline;
 
   public
     [Setup]
@@ -113,14 +88,35 @@ implementation
 
 uses
   System.Types,
-  System.SysUtils;
+  System.SysUtils,
+  FormEffects.Utils.Mocks;
 
 {$IFDEF FORM_EFFECTS_TESTS}
 
 {$REGION 'TRenderWindowToDCAuxMocks'}
 
+type
+
+{ TRenderWindowToDCAuxMocks }
+
+  TRenderWindowToDCAuxMocks = class abstract(TMocksManager)
+  public
+    procedure RenderWindowToDCAux(
+      const Wnd, StopWnd: HWND;
+      const WinControl: TWinControl;
+      const Flags: DWORD;
+      const NonClientCallback, ClientCallback: TPaintCallback;
+      const DC: HDC;
+      const Rect: TRect;
+      const CheckVisibility, CheckRegion: Boolean
+    ); virtual; abstract;
+
+  public
+    constructor Create; reintroduce;
+  end;
+
 var
-  RenderWindowToDCAuxResultReference: TRenderWindowToDCAuxMocks.TRenderWindowToDCAuxResultReference = nil;
+  RenderWindowToDCAuxMocks: TRenderWindowToDCAuxMocks;
 
 {$IFDEF USE_BILLENIUM_EFFECTS}
 
@@ -146,18 +142,19 @@ procedure RenderWindowToDCAuxMock(
   const CheckVisibility, CheckRegion, Fast: Boolean
 );
 begin
-  RenderWindowToDCAuxResultReference(
-    Wnd,
-    StopWnd,
-    WinControl,
-    Flags,
-    NonClientCallback,
-    ClientCallback,
-    DC,
-    Rect,
-    CheckVisibility,
-    CheckRegion
-  );
+  RenderWindowToDCAuxMocks
+    .RenderWindowToDCAux(
+      Wnd,
+      StopWnd,
+      WinControl,
+      Flags,
+      NonClientCallback,
+      ClientCallback,
+      DC,
+      Rect,
+      CheckVisibility,
+      CheckRegion
+    );
 end;
 {$ELSE ~ NOT USE_BILLENIUM_EFFECTS}
 type
@@ -182,41 +179,21 @@ procedure RenderWindowToDCAuxMock(
   const CheckVisibility, CheckRegion: Boolean
 );
 begin
-  RenderWindowToDCAuxResultReference(
-    Wnd,
-    StopWnd,
-    WinControl,
-    Flags,
-    NonClientCallback,
-    ClientCallback,
-    DC,
-    Rect,
-    CheckVisibility,
-    CheckRegion
-  );
+  RenderWindowToDCAuxMocks
+    .RenderWindowToDCAux(
+      Wnd,
+      StopWnd,
+      WinControl,
+      Flags,
+      NonClientCallback,
+      ClientCallback,
+      DC,
+      Rect,
+      CheckVisibility,
+      CheckRegion
+    );
 end;
 {$ENDIF ~ USE_BILLENIUM_EFFECTS}
-
-procedure TRenderWindowToDCAuxMocks.RenderWindowToDCAux_Result(const Callback: TRenderWindowToDCAuxResultReference);
-begin
-  if Assigned(Callback) then
-    RenderWindowToDCAuxResultReference := Callback
-  else
-  begin
-    RenderWindowToDCAuxResultReference :=
-      procedure(
-        const Wnd, StopWnd: HWND;
-        const WinControl: TWinControl;
-        const Flags: DWORD;
-        const NonClientCallback, ClientCallback: TPaintCallback;
-        const DC: HDC;
-        const Rect: TRect;
-        const CheckVisibility, CheckRegion: Boolean
-      )
-      begin
-      end;
-  end;
-end;
 
 { TRenderWindowToDCAuxMocks }
 
@@ -224,12 +201,13 @@ constructor TRenderWindowToDCAuxMocks.Create;
 begin
   inherited Create;
 
+  RenderWindowToDCAuxMocks := Self;
+
 {$IFDEF USE_BILLENIUM_EFFECTS}
   AddIntercept<TRenderWindowToDCAux>(RenderWindowToDCAuxExt, RenderWindowToDCAuxMock);
 {$ELSE ~ NOT USE_BILLENIUM_EFFECTS}
-  AddIntercept<TRenderWindowToDCAux>(RenderWindowToDCAux, RenderWindowToDCAuxMock);
+  AddIntercept<TRenderWindowToDCAux>(FormEffects.Rendering.RenderWindowToDCAux, RenderWindowToDCAuxMock);
 {$ENDIF ~ USE_BILLENIUM_EFFECTS}
-  RenderWindowToDCAux_Result(nil);
 end;
 
 {$ENDREGION 'TRenderWindowToDCAuxMocks'}
@@ -272,7 +250,6 @@ begin
   var IsMaximizedMDIChildInvoked := False;
   var GetWindowOffsetInvoked     := False;
   var OffsetWindowOrgExInvoked   := False;
-  var RenderWindowToDCAuxInvoked := False;
   var SetWindowOrgExInvoked      := False;
 
   var WindowOffset := TPoint.Zero;
@@ -308,30 +285,32 @@ begin
       Assert.AreEqual<TPoint>(WindowOffset, Result);
     end
   );
-  FRenderWindowToDCAuxMocks.RenderWindowToDCAux_Result(
-    procedure(
-      const Wnd, StopWnd: HWND;
-      const WinControl: TWinControl;
-      const Flags: DWORD;
-      const NonClientCallback, ClientCallback: TPaintCallback;
-      const DC: HDC;
-      const Rect: TRect;
-      const CheckVisibility, CheckRegion: Boolean
-    )
-    begin
-      RenderWindowToDCAuxInvoked := True;
 
-      Assert.AreEqual<HWND>(FWnd, Wnd);
-      Assert.AreEqual<TWinControl>(FWinControl, WinControl);
-      Assert.AreEqual<HDC>(FDC, DC);
-      Assert.IsFalse(CheckVisibility);
-      Assert.IsTrue(CheckRegion);
-      if Expected then
-        Assert.AreEqual<TRect>(TRect.InlineCreate(241, 132, 520, 254), Rect)
-      else
-        Assert.AreEqual<TRect>(TRect.InlineCreate(100, 55, 379, 177), Rect);
-    end
-  );
+  var Rect: TRect;
+  if Expected then
+    Rect := TRect.InlineCreate(241, 132, 520, 254)
+  else
+    Rect := TRect.InlineCreate(100, 55, 379, 177);
+
+  const RenderWindowToDCAuxMocks = TMock<TRenderWindowToDCAuxMocks>.Create;
+  RenderWindowToDCAuxMocks
+    .Setup
+    .Expect
+    .Once
+    .When
+    .RenderWindowToDCAux(
+      It0.IsEqualTo<HWND>(FWnd),
+      It1.IsAny<HWND>,
+      It2.IsEqualTo<TWinControl>(FWinControl),
+      It3.IsAny<DWORD>,
+      It4.IsEqualTo<TPaintCallback>(nil),
+      It5.IsEqualTo<TPaintCallback>(nil),
+      It6.IsEqualTo<HDC>(FDC),
+      It7.IsEqualTo<TRect>(Rect),
+      It8.IsEqualTo<Boolean>(False),
+      It9.IsEqualTo<Boolean>(True)
+    );
+
   FWinapiWindowsMocks.SetWindowOrgEx_Result(
     procedure(const DC: HDC; const X, Y: Integer)
     begin
@@ -347,14 +326,13 @@ begin
   Assert.IsTrue(IsMaximizedMDIChildInvoked);
   Assert.IsTrue(GetWindowOffsetInvoked);
   Assert.IsTrue(OffsetWindowOrgExInvoked);
-  Assert.IsTrue(RenderWindowToDCAuxInvoked);
   Assert.AreEqual(Expected, SetWindowOrgExInvoked);
+  RenderWindowToDCAuxMocks.Verify;
 end;
 
 procedure TRenderWindowToDCTests.should_override_stopwnd(const IsChild: Boolean);
 begin
   var IsChildInvoked             := False;
-  var RenderWindowToDCAuxInvoked := False;
 
   FWinapiWindowsMocks.IsChild_Result(
     function(const ParentWnd, Wnd: HWND): Boolean
@@ -367,31 +345,36 @@ begin
       Result := IsChild;
     end
   );
-  FRenderWindowToDCAuxMocks.RenderWindowToDCAux_Result(
-    procedure(
-      const Wnd, StopWnd: HWND;
-      const WinControl: TWinControl;
-      const Flags: DWORD;
-      const NonClientCallback, ClientCallback: TPaintCallback;
-      const DC: HDC;
-      const Rect: TRect;
-      const CheckVisibility, CheckRegion: Boolean
-    )
-    begin
-      RenderWindowToDCAuxInvoked := True;
 
-      Assert.AreEqual<HWND>(FWnd, Wnd);
-      if IsChild then
-        Assert.AreEqual<HWND>(FStopWnd, StopWnd)
-      else
-        Assert.AreEqual<HWND>(0, StopWnd);
-    end
-  );
+  var StopWnd: HWND;
+  if IsChild then
+    StopWnd := FStopWnd
+  else
+    StopWnd := 0;
+
+  const RenderWindowToDCAuxMocks = TMock<TRenderWindowToDCAuxMocks>.Create;
+  RenderWindowToDCAuxMocks
+    .Setup
+    .Expect
+    .Once
+    .When
+    .RenderWindowToDCAux(
+      It0.IsEqualTo<HWND>(FWnd),
+      It1.IsEqualTo<HWND>(StopWnd),
+      It2.IsAny<TWinControl>,
+      It3.IsAny<DWORD>,
+      It4.IsEqualTo<TPaintCallback>(nil),
+      It5.IsEqualTo<TPaintCallback>(nil),
+      It6.IsAny<HDC>,
+      It7.IsAny<TRect>,
+      It8.IsAny<Boolean>,
+      It9.IsAny<Boolean>
+    );
 
   RenderWindowToDC;
 
   Assert.IsTrue(IsChildInvoked);
-  Assert.IsTrue(RenderWindowToDCAuxInvoked);
+  RenderWindowToDCAuxMocks.Verify;
 end;
 
 procedure TRenderWindowToDCTests.should_stop_executing_if_wnd_not_visible_when_CheckVisibility;
@@ -450,8 +433,6 @@ begin
   FWinapiWindowsMocks       := TWinapiWindowsMocks.Create;
   FUtilsWindowsMocks        := TUtilsWindowsMocks.Create;
   FUtilsFormsMocks          := TUtilsFormsMocks.Create;
-  FVclControlsMocks         := TVclControlsMocks.Create;
-  FRenderWindowToDCAuxMocks := TRenderWindowToDCAuxMocks.Create;
 
   FWnd     := 199;
   FStopWnd := 299;
@@ -462,8 +443,6 @@ procedure TRenderWindowToDCTests.TearDown;
 begin
   FWinControl := nil;
 
-  FreeAndNil(FRenderWindowToDCAuxMocks);
-  FreeAndNil(FVclControlsMocks);
   FreeAndNil(FUtilsFormsMocks);
   FreeAndNil(FUtilsWindowsMocks);
   FreeAndNil(FWinapiWindowsMocks);

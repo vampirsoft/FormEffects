@@ -69,7 +69,6 @@ type
   [TestFixture]
   TEmulateNCPaintTests = class
   strict private
-    FVclControlsMocks: TVclControlsMocks;
     FEmulateNCPaintMocks: TEmulateNCPaintMocks;
 
     FDC: HDC;
@@ -342,7 +341,6 @@ end;
 
 procedure TEmulateNCPaintTests.Setup;
 begin
-  FVclControlsMocks    := TVclControlsMocks.Create;
   FEmulateNCPaintMocks := TEmulateNCPaintMocks.Create;
 
   FDC  := 507;
@@ -351,7 +349,6 @@ end;
 procedure TEmulateNCPaintTests.TearDown;
 begin
   FreeAndNil(FEmulateNCPaintMocks);
-  FreeAndNil(FVclControlsMocks);
 end;
 
 initialization
